@@ -1,9 +1,29 @@
-# cs4843assign2
+# Assignment Two
+
+## Table of Contents
+[Homework Two](#homework-two)
+
+[Network](#network)
+
+[Parameters](#parameters)
+
+[Routes](#routes)
+
+[Servers and security groups](#servers-and-security-groups)
+
+[Database and storage](#database-and-storage)
+
+### Homework Two
+
+[Top](#table-of-contents)
+
 
 ![image](https://user-images.githubusercontent.com/93015308/163276641-277665b9-8869-49c1-9523-7abb20d49d79.png)
 
 
 # Network
+
+[Top](#table-of-contents)
 
 High level description:
 
@@ -12,6 +32,8 @@ Network YAML provided is a template for the build out of the network. It creates
 Past the AWS gateway our VPC is managed by an elastic load balancer. In AWS applications availability zones refer to the ability for our VPC to judge the usage of a given redundant network as a whole, and distribute users and their load appropriately.  In our example this is two networks, but it would be very easy to make this scale to our budget, as that is the restrictive measure generally accepted in practice.  AWS offers network load balancing as well as gateway and application load balancing. From here working our way in everything is duplicated, or mirrored. In our example twice, but as mentioned above this can generally be scaled to whatever our need or budget can supply. Directly inside we have an elastic IP connected to our NAT gateway. This allows us to have fail-resistance built in. Our NAT gateway separates the internal components of our network from the outside world. Everything inside here is on the private subnet. 
 
 ## Components
+
+[Top](#table-of-contents)
 
 ![image](https://user-images.githubusercontent.com/93015308/163276765-b8ef4159-bbe4-436f-b7e0-e4eb8cd2ac84.png)
 
@@ -38,6 +60,8 @@ This is our actual web application. Here is the logic that runs whatever it is t
 Here we see both zone's link to the SQL database. As is detailed in greater depth later in this README, it is the only asymetrically designed portion of our network. As all links point to the primary database, and the primary database points to the secondary which resides in the second zone.
 
 ## Parameters
+
+[Top](#table-of-contents)
 
 ![image](https://user-images.githubusercontent.com/93015308/163276952-95c4afab-1814-410e-a46a-ac11e205d3c0.png)
 
@@ -69,15 +93,25 @@ Now for the private subnets.
 
 
 # Routes
+
+[Top](#table-of-contents)
+
 The other component of the network YAML file is the route settings. While it also sets up the physical (well virtual devices masked as physical devices) devices, it also preprograms them with their settings. Of chief importance is how network traffic is handled. Our internet gateway is given 0.0.0.0/0 as it’s destination block. This is router-speak for “Anything routed outside our network goes through me, and out this port” since this is likely a device that doesn’t even physically exist, there probably isn’t an actual port. Moving deeper in the NAT gateways are also programmed this way, for the same reasons. 
 For networks that is it. The routes for devices will need to be set up to mesh with these parameters as well, but while they will be hooked up to the network, they will be covered in a different YAML.
 
 #	Servers and security groups
+
+[Top](#table-of-contents)
+
 High level description
 
 This YAML file sets up the servers, and also applies security group settings to them. It establishes the base image (assuming we have blank slate computers this is everything that is initially installed.) and specifies the key pair to be used to monitor and administrate them. In our example it opens TCP ports 80 and 22 ingress, and 0 thru 65535 egress through our Web server. As egress ports are dynamically assigned this may be acceptable, though it will need to be something kept in mind if we wish to do our own firewall work later. As set up this means that the security group set up for the web server allows webpage connections in as well as SSH.
 Our Load balancer security group allows port 80 in and out, the elastic load balancer imports settings from the this group, and applies the settings across both. A listener is set up for port 80 and we have a metric for health checks set up for the group. This will allow us to view the state of the group.
 
 #	Database and storage
+
+[Top](#table-of-contents)
+
 High level description
+
 This YAML will set up the database server, which will be storing information for our actual app. The only irregularity of this portion of the entire operation is that all availability zones will point to a single server sitting in our first zone. There are a few reasons for this, which likely were not covered in class, chief among these is how databases work. Generally, in order to have a fast and correct database you need to lose one of those two words. A database can be fast, but may be incorrect, or it may be correct but be slow. This all depends on usage. A good example of how this looks like in real usage is MMOs. They have massive databases of players, but must have incredibly high availability and very low tolerance for rollbacks. To ensure this is the truth they shutdown the servers often times weekly.  So we will have a primary and a backup or secondary, the primary will be connected to by the other network and it will need to have a route from the zone 2 web server to the zone 1 database, and from the zone 1 database to the zone 2 database directly. Additionally in the case of a failover we will want the zone one web server to access the zone 2 database seamlessly and quickly.
